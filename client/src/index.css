@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@layer base {
+
+    button,
+    [type='button'],
+    [type='reset'],
+    [type='submit'] {
+        cursor: pointer;
+    }
+
+    button:disabled {
+        cursor: not-allowed;
+    }
+}

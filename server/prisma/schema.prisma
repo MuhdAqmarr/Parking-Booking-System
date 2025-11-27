@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Faculty {
+  facultyID    Int           @id @default(autoincrement())
+  facultyName  String
+  facultyCode  String        @unique
+  locationDesc String?
+  campusUsers  CampusUser[]
+  parkingZones ParkingZone[]
+  reservations Reservation[]
+
+  @@map("FACULTY")
+}
+
+model CampusUser {
+  campusUserID Int           @id @default(autoincrement())
+  facultyID    Int
+  fullName     String
+  userType     String
+  studentNo    String?       @unique
+  staffNo      String?       @unique
+  email        String        @unique
+  phoneNum     String?
+  status       String
+  faculty      Faculty       @relation(fields: [facultyID], references: [facultyID])
+  vehicles     Vehicle[]
+
+  @@map("CAMPUS_USER")
+}
+
+model ParkingZone {
+  zoneID       Int           @id @default(autoincrement())
+  facultyID    Int
+  zoneName     String
+  zoneType     String
+  capacity     Int
+  locationDesc String?
+  faculty      Faculty       @relation(fields: [facultyID], references: [facultyID])
+  parkingLots  ParkingLot[]
+  permits      Permit[]
+  reservations Reservation[]
+
+  @@map("PARKING_ZONE")
+}
+
+model ParkingLot {
+  lotID             Int              @id @default(autoincrement())
+  zoneID            Int
+  lotNumber         String
+  status            String
+  isDisabledFriendly Boolean         @default(false)
+  zone              ParkingZone      @relation(fields: [zoneID], references: [zoneID])
+  reservations      Reservation[]
+  parkingSessions   ParkingSession[]
+
+  @@map("PARKING_LOT")
+}
+
+model Vehicle {
+  vehicleID       Int              @id @default(autoincrement())
+  campusUserID    Int?
+  plateNum        String           @unique
+  vehicleType     String
+  ownerName       String
+  ownerType       String
+  contactNum      String?
+  campusUser      CampusUser?      @relation(fields: [campusUserID], references: [campusUserID])
+  permits         Permit[]
+  reservations    Reservation[]
+  parkingSessions ParkingSession[]
+
+  @@map("VEHICLE")
+}
+
+model Permit {
+  permitID   Int         @id @default(autoincrement())
+  vehicleID  Int
+  zoneID     Int
+  permitType String
+  startDate  DateTime
+  endDate    DateTime
+  status     String
+  vehicle    Vehicle     @relation(fields: [vehicleID], references: [vehicleID])
+  zone       ParkingZone @relation(fields: [zoneID], references: [zoneID])
+
+  @@map("PERMIT")
+}
+
+model Reservation {
+  reservationID   Int              @id @default(autoincrement())
+  facultyID       Int
+  zoneID          Int
+  lotID           Int
+  vehicleID       Int
+  reservationDate DateTime
+  startTime       DateTime
+  endTime         DateTime
+  createdDateTime DateTime         @default(now())
+  status          String
+  userType        String
+  proofCode       String           @unique
+  faculty         Faculty          @relation(fields: [facultyID], references: [facultyID])
+  zone            ParkingZone      @relation(fields: [zoneID], references: [zoneID])
+  lot             ParkingLot       @relation(fields: [lotID], references: [lotID])
+  vehicle         Vehicle          @relation(fields: [vehicleID], references: [vehicleID])
+  parkingSessions ParkingSession[]
+
+  @@map("RESERVATION")
+}
+
+model ParkingSession {
+  sessionID     Int          @id @default(autoincrement())
+  lotID         Int
+  vehicleID     Int
+  reservationID Int?
+  entryTime     DateTime     @default(now())
+  exitTime      DateTime?
+  sessionType   String
+  isViolation   Boolean      @default(false)
+  lot           ParkingLot   @relation(fields: [lotID], references: [lotID])
+  vehicle       Vehicle      @relation(fields: [vehicleID], references: [vehicleID])
+  reservation   Reservation? @relation(fields: [reservationID], references: [reservationID])
+  fines         Fine[]
+
+  @@map("PARKING_SESSION")
+}
+
+model Admin {
+  adminID      Int       @id @default(autoincrement())
+  adminName    String
+  username     String    @unique
+  passwordHash String
+  email        String    @unique
+  phoneNum     String?
+  role         String
+  fines        Fine[]
+  payments     Payment[]
+
+  @@map("ADMIN")
+}
+
+model Fine {
+  fineID      Int       @id @default(autoincrement())
+  sessionID   Int
+  adminID     Int
+  issuedDate  DateTime  @default(now())
+  fineType    String
+  amount      Float
+  status      String
+  remarks     String?
+  session     ParkingSession @relation(fields: [sessionID], references: [sessionID])
+  admin       Admin          @relation(fields: [adminID], references: [adminID])
+  payments    Payment[]
+
+  @@map("FINE")
+}
+
+model Payment {
+  paymentID     Int      @id @default(autoincrement())
+  fineID        Int
+  adminID       Int
+  paymentDate   DateTime @default(now())
+  amountPaid    Float
+  paymentMethod String
+  receiptNum    String?
+  gatewayRef    String?
+  fine          Fine     @relation(fields: [fineID], references: [fineID])
+  admin         Admin    @relation(fields: [adminID], references: [adminID])
+
+  @@map("PAYMENT")
+}
