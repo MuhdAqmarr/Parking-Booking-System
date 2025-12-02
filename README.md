@@ -10,15 +10,22 @@
     ```
 
 2.  **Environment Variables**:
-    *   `server/.env` is already set up with default values.
-    *   `DATABASE_URL="file:./dev.db"`
-    *   `JWT_SECRET="supersecretkey"`
-    *   `STRIPE_SECRET_KEY="sk_test_placeholder"`
+    *   Create `server/.env` with the following:
+    ```env
+    ORACLE_USER=your_username
+    ORACLE_PASSWORD=your_password
+    ORACLE_HOST=localhost
+    ORACLE_PORT=1521
+    ORACLE_SID=xe
+    JWT_SECRET=your_secure_secret
+    STRIPE_SECRET_KEY=sk_test_placeholder
+    ```
 
 3.  **Database Setup**:
+    *   Ensure your Oracle Database is running.
+    *   Run the seed script to populate the database:
     ```bash
     cd server
-    npx prisma migrate dev --name init
     npm run seed
     ```
 
@@ -35,9 +42,10 @@
 *   **Public Reservation**: Multi-step booking flow for Students, Staff, and Visitors.
 *   **Ticket View**: View and print parking permits.
 *   **Fines**: Search and pay parking fines (Stripe integration mock).
-*   **Admin**: Login (admin/admin123) and Dashboard placeholder.
+*   **Admin**: Login (admin/admin123) and Dashboard.
 
 ## Tech Stack
 
 *   **Frontend**: React, Vite, Tailwind CSS, TypeScript.
-*   **Backend**: Node.js, Express, Prisma (SQLite), TypeScript.
+*   **Backend**: Node.js, Express, TypeORM (Oracle DB), TypeScript.
+
