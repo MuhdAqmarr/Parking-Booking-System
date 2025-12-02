@@ -1,8 +1,17 @@
 import { Request, Response } from 'express';
-import prisma from '../prisma.js';
+import { AppDataSource } from '../data-source.js';
+import { CampusUser } from '../entity/CampusUser.js';
+import { Faculty } from '../entity/Faculty.js';
+import { ParkingZone } from '../entity/ParkingZone.js';
+import { ParkingLot } from '../entity/ParkingLot.js';
+import { Reservation } from '../entity/Reservation.js';
+import { Vehicle } from '../entity/Vehicle.js';
+import { Fine } from '../entity/Fine.js';
 import Stripe from 'stripe';
+import { LessThan, MoreThan, In } from 'typeorm';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder';
+const stripe = new Stripe(stripeKey, {
     // apiVersion: '2024-11-20.acacia',
 });
 
@@ -14,7 +23,8 @@ export const verifyCampusUser = async (req: Request, res: Response) => {
         if (userType === 'Student') where.studentNo = studentNo;
         if (userType === 'Staff') where.staffNo = staffNo;
 
-        const user = await prisma.campusUser.findFirst({ where });
+        const userRepo = AppDataSource.getRepository(CampusUser);
+        const user = await userRepo.findOne({ where });
 
         if (!user) {
             res.status(404).json({ error: 'User not found or inactive' });
@@ -30,7 +40,8 @@ export const verifyCampusUser = async (req: Request, res: Response) => {
 
 export const getFaculties = async (req: Request, res: Response) => {
     try {
-        const faculties = await prisma.faculty.findMany();
+        const facultyRepo = AppDataSource.getRepository(Faculty);
+        const faculties = await facultyRepo.find();
         res.json(faculties);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch faculties' });
@@ -40,7 +51,8 @@ export const getFaculties = async (req: Request, res: Response) => {
 export const getZones = async (req: Request, res: Response) => {
     const { facultyID } = req.query;
     try {
-        const zones = await prisma.parkingZone.findMany({
+        const zoneRepo = AppDataSource.getRepository(ParkingZone);
+        const zones = await zoneRepo.find({
             where: { facultyID: Number(facultyID) },
         });
         res.json(zones);
@@ -53,43 +65,39 @@ export const getAvailableLots = async (req: Request, res: Response) => {
     const { zoneID, date, startTime, endTime } = req.query;
 
     try {
-        // Validate inputs
         if (!zoneID || !date || !startTime || !endTime) {
             res.status(400).json({ error: 'Missing required parameters' });
             return;
         }
 
-        // Parse dates with proper ISO format - add seconds
         const startDateTime = new Date(`${date}T${startTime}:00`);
         const endDateTime = new Date(`${date}T${endTime}:00`);
         const reservationDate = new Date(`${date}T00:00:00`);
 
-        // Validate parsed dates
         if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
             res.status(400).json({ error: 'Invalid date or time format' });
             return;
         }
 
-        const lots = await prisma.parkingLot.findMany({
+        const lotRepo = AppDataSource.getRepository(ParkingLot);
+
+        const lots = await lotRepo.find({
             where: { zoneID: Number(zoneID), status: 'Available' },
-            include: {
-                reservations: {
-                    where: {
-                        reservationDate: reservationDate,
-                        status: { in: ['Reserved', 'CheckedIn'] },
-                        AND: [
-                            { startTime: { lt: endDateTime } },
-                            { endTime: { gt: startDateTime } }
-                        ]
-                    }
-                }
-            }
+            relations: ["reservations"]
         });
 
-        const result = lots.map(lot => ({
-            ...lot,
-            isReserved: lot.reservations.length > 0
-        }));
+        const result = lots.map(lot => {
+            const hasConflict = lot.reservations.some(res =>
+                res.reservationDate.getTime() === reservationDate.getTime() &&
+                ['Reserved', 'CheckedIn'].includes(res.status) &&
+                res.startTime < endDateTime &&
+                res.endTime > startDateTime
+            );
+            return {
+                ...lot,
+                isReserved: hasConflict
+            };
+        });
 
         res.json(result);
     } catch (error) {
@@ -100,20 +108,9 @@ export const getAvailableLots = async (req: Request, res: Response) => {
 
 export const createReservation = async (req: Request, res: Response) => {
     const {
-        userType,
-        studentNo,
-        staffNo,
-        name,
-        email,
-        phoneNum,
-        plateNum,
-        vehicleType,
-        reservationDate,
-        startTime,
-        endTime,
-        facultyID,
-        zoneID,
-        lotID
+        userType, studentNo, staffNo, name, email, phoneNum,
+        plateNum, vehicleType, reservationDate, startTime, endTime,
+        facultyID, zoneID, lotID
     } = req.body;
 
     try {
@@ -122,10 +119,12 @@ export const createReservation = async (req: Request, res: Response) => {
         let contactNum = phoneNum;
 
         if (userType !== 'Visitor') {
+            const userRepo = AppDataSource.getRepository(CampusUser);
             const where: any = { userType, status: 'Active' };
             if (userType === 'Student') where.studentNo = studentNo;
             if (userType === 'Staff') where.staffNo = staffNo;
-            const user = await prisma.campusUser.findFirst({ where });
+
+            const user = await userRepo.findOne({ where });
             if (!user) {
                 res.status(400).json({ error: 'Invalid campus user' });
                 return;
@@ -135,7 +134,8 @@ export const createReservation = async (req: Request, res: Response) => {
             contactNum = user.phoneNum || phoneNum;
         }
 
-        const zone = await prisma.parkingZone.findUnique({ where: { zoneID } });
+        const zoneRepo = AppDataSource.getRepository(ParkingZone);
+        const zone = await zoneRepo.findOne({ where: { zoneID } });
         if (!zone) {
             res.status(400).json({ error: 'Zone not found' });
             return;
@@ -150,20 +150,18 @@ export const createReservation = async (req: Request, res: Response) => {
             return;
         }
 
-        // Parse dates properly with seconds
         const start = new Date(`${reservationDate}T${startTime}:00`);
         const end = new Date(`${reservationDate}T${endTime}:00`);
         const rDate = new Date(`${reservationDate}T00:00:00`);
 
-        const conflict = await prisma.reservation.findFirst({
+        const resRepo = AppDataSource.getRepository(Reservation);
+        const conflict = await resRepo.findOne({
             where: {
                 lotID,
                 reservationDate: rDate,
-                status: { in: ['Reserved', 'CheckedIn'] },
-                AND: [
-                    { startTime: { lt: end } },
-                    { endTime: { gt: start } }
-                ]
+                status: In(['Reserved', 'CheckedIn']),
+                startTime: LessThan(end),
+                endTime: MoreThan(start)
             }
         });
 
@@ -172,36 +170,35 @@ export const createReservation = async (req: Request, res: Response) => {
             return;
         }
 
-        let vehicle = await prisma.vehicle.findUnique({ where: { plateNum } });
+        const vehicleRepo = AppDataSource.getRepository(Vehicle);
+        let vehicle = await vehicleRepo.findOne({ where: { plateNum } });
         if (!vehicle) {
-            vehicle = await prisma.vehicle.create({
-                data: {
-                    plateNum,
-                    vehicleType,
-                    ownerName,
-                    ownerType: userType,
-                    contactNum,
-                    campusUserID
-                }
+            vehicle = vehicleRepo.create({
+                plateNum,
+                vehicleType,
+                ownerName,
+                ownerType: userType,
+                contactNum,
+                campusUserID: campusUserID || undefined
             });
+            await vehicleRepo.save(vehicle);
         }
 
         const proofCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        const reservation = await prisma.reservation.create({
-            data: {
-                facultyID,
-                zoneID,
-                lotID,
-                vehicleID: vehicle.vehicleID,
-                reservationDate: rDate,
-                startTime: start,
-                endTime: end,
-                status: 'Reserved',
-                userType,
-                proofCode
-            }
+        const reservation = resRepo.create({
+            facultyID,
+            zoneID,
+            lotID,
+            vehicleID: vehicle.vehicleID,
+            reservationDate: rDate,
+            startTime: start,
+            endTime: end,
+            status: 'Reserved',
+            userType,
+            proofCode
         });
+        await resRepo.save(reservation);
 
         res.json({ reservation, proofCode });
 
@@ -214,14 +211,10 @@ export const createReservation = async (req: Request, res: Response) => {
 export const getReservation = async (req: Request, res: Response) => {
     const { proofCode } = req.params;
     try {
-        const reservation = await prisma.reservation.findUnique({
+        const resRepo = AppDataSource.getRepository(Reservation);
+        const reservation = await resRepo.findOne({
             where: { proofCode },
-            include: {
-                faculty: true,
-                zone: true,
-                lot: true,
-                vehicle: true
-            }
+            relations: ["faculty", "zone", "lot", "vehicle"]
         });
         if (!reservation) {
             res.status(404).json({ error: 'Reservation not found' });
@@ -236,25 +229,28 @@ export const getReservation = async (req: Request, res: Response) => {
 export const getFines = async (req: Request, res: Response) => {
     const { plateNum, studentNo, staffNo } = req.query;
     try {
-        let where: any = { status: 'Unpaid' };
+        const fineRepo = AppDataSource.getRepository(Fine);
+        const query = fineRepo.createQueryBuilder("fine")
+            .leftJoinAndSelect("fine.session", "session")
+            .leftJoinAndSelect("session.vehicle", "vehicle")
+            .leftJoinAndSelect("vehicle.campusUser", "campusUser")
+            .where("fine.status = :status", { status: 'Unpaid' });
 
         if (plateNum) {
-            where.session = { vehicle: { plateNum: String(plateNum) } };
+            query.andWhere("vehicle.plateNum = :plateNum", { plateNum });
         } else if (studentNo) {
-            where.session = { vehicle: { campusUser: { studentNo: String(studentNo) } } };
+            query.andWhere("campusUser.studentNo = :studentNo", { studentNo });
         } else if (staffNo) {
-            where.session = { vehicle: { campusUser: { staffNo: String(staffNo) } } };
+            query.andWhere("campusUser.staffNo = :staffNo", { staffNo });
         } else {
             res.status(400).json({ error: 'Provide plateNum, studentNo or staffNo' });
             return;
         }
 
-        const fines = await prisma.fine.findMany({
-            where,
-            include: { session: { include: { vehicle: true } } }
-        });
+        const fines = await query.getMany();
         res.json(fines);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Fetch fines failed' });
     }
 };
@@ -262,7 +258,8 @@ export const getFines = async (req: Request, res: Response) => {
 export const payFine = async (req: Request, res: Response) => {
     const { fineID } = req.params;
     try {
-        const fine = await prisma.fine.findUnique({ where: { fineID: Number(fineID) } });
+        const fineRepo = AppDataSource.getRepository(Fine);
+        const fine = await fineRepo.findOne({ where: { fineID: Number(fineID) } });
         if (!fine || fine.status !== 'Unpaid') {
             res.status(400).json({ error: 'Invalid fine' });
             return;
@@ -297,7 +294,6 @@ export const payFine = async (req: Request, res: Response) => {
 };
 
 export const getAnnouncements = async (req: Request, res: Response) => {
-    // Mock data
     const announcements = [
         { id: 1, message: "Zone C under maintenance until 14 March.", type: "info" },
         { id: 2, message: "Event Mode active on Friday – Zone E reserved for Convocation.", type: "warning" }
@@ -307,20 +303,30 @@ export const getAnnouncements = async (req: Request, res: Response) => {
 
 export const getOverview = async (req: Request, res: Response) => {
     try {
-        const totalStaffLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Staff' } } });
-        const occupiedStaffLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Staff' }, status: 'Occupied' } });
+        const lotRepo = AppDataSource.getRepository(ParkingLot);
+        const resRepo = AppDataSource.getRepository(Reservation);
 
-        const totalStudentLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Student' } } });
-        const occupiedStudentLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Student' }, status: 'Occupied' } });
+        // We need to join with Zone to filter by zoneType
+        const countLots = async (zoneType: string, status?: string) => {
+            const where: any = { zone: { zoneType } };
+            if (status) where.status = status;
+            return await lotRepo.count({ where, relations: ["zone"] });
+        };
 
-        const totalVisitorLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Visitor' } } });
-        const occupiedVisitorLots = await prisma.parkingLot.count({ where: { zone: { zoneType: 'Visitor' }, status: 'Occupied' } });
+        const totalStaffLots = await countLots('Staff');
+        const occupiedStaffLots = await countLots('Staff', 'Occupied');
 
-        const totalFreeLots = await prisma.parkingLot.count({ where: { status: 'Available' } });
+        const totalStudentLots = await countLots('Student');
+        const occupiedStudentLots = await countLots('Student', 'Occupied');
+
+        const totalVisitorLots = await countLots('Visitor');
+        const occupiedVisitorLots = await countLots('Visitor', 'Occupied');
+
+        const totalFreeLots = await lotRepo.count({ where: { status: 'Available' } });
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const totalReservedToday = await prisma.reservation.count({
+        const totalReservedToday = await resRepo.count({
             where: {
                 reservationDate: today
             }
@@ -342,13 +348,18 @@ export const getOverview = async (req: Request, res: Response) => {
 export const findReservation = async (req: Request, res: Response) => {
     const { plateNum } = req.body;
     try {
-        const reservation = await prisma.reservation.findFirst({
+        const resRepo = AppDataSource.getRepository(Reservation);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const reservation = await resRepo.findOne({
             where: {
                 vehicle: { plateNum: String(plateNum) },
-                status: { in: ['Reserved', 'CheckedIn'] },
-                reservationDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+                status: In(['Reserved', 'CheckedIn']),
+                reservationDate: MoreThan(today) // or gte
             },
-            orderBy: { reservationDate: 'asc' }
+            order: { reservationDate: 'ASC' },
+            relations: ["vehicle"]
         });
 
         if (!reservation) {

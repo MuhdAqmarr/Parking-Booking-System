@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { Lock, User, Loader2 } from 'lucide-react';
 
 const AdminLogin: React.FC = () => {
@@ -38,7 +38,10 @@ const AdminLogin: React.FC = () => {
             const res = await axios.post('/api/auth/login', { username, password });
             localStorage.setItem('token', res.data.token);
             toast.success('Login successful');
-            setTimeout(() => navigate('/admin'), 500);
+            setTimeout(() => {
+                toast.dismiss();
+                navigate('/admin');
+            }, 500);
         } catch (err: any) {
             const msg = err.response?.data?.error || 'Login failed. Please check your credentials.';
             toast.error(msg);
@@ -49,7 +52,6 @@ const AdminLogin: React.FC = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <Toaster position="top-center" />
             <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-gray-100">
                 <div className="text-center mb-8">
                     <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-cyan-500/30 mb-4">

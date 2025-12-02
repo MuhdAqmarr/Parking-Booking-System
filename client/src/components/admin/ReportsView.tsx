@@ -79,7 +79,7 @@ const ReportsView: React.FC = () => {
                 />
                 <Card
                     title="Total Revenue"
-                    value={`$${report.revenue}`}
+                    value={`RM${report.revenue}`}
                     sub="From Fines & Payments"
                     icon={DollarSign}
                     color="bg-green-500"

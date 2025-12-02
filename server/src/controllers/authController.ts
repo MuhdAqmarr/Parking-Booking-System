@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import prisma from '../prisma.js';
+import { AppDataSource } from '../data-source.js';
+import { Admin } from '../entity/Admin.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -7,7 +8,9 @@ export const login = async (req: Request, res: Response) => {
     const { username, password } = req.body;
 
     try {
-        const admin = await prisma.admin.findUnique({ where: { username } });
+        const adminRepo = AppDataSource.getRepository(Admin);
+        const admin = await adminRepo.findOne({ where: { username } });
+
         if (!admin) {
             res.status(401).json({ error: 'Invalid credentials' });
             return;

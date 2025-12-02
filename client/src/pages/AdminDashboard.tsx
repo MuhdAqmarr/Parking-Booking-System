@@ -108,7 +108,7 @@ const AdminDashboard: React.FC = () => {
                         </div>
                         <div className="bg-gradient-to-br from-green-50/90 to-green-100/50 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-green-200 flex items-center space-x-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                             <div className="p-4 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white shadow-lg shadow-green-500/30"><DollarSign className="w-6 h-6" /></div>
-                            <div><p className="text-sm text-green-600 font-medium">Revenue Today</p><h3 className="text-2xl font-bold text-gray-900">${stats?.revenue || 0}</h3></div>
+                            <div><p className="text-sm text-green-600 font-medium">Revenue Today</p><h3 className="text-2xl font-bold text-gray-900">RM{stats?.revenue || 0}</h3></div>
                         </div>
                         <div className="bg-gradient-to-br from-red-50/90 to-red-100/50 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-red-200 flex items-center space-x-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                             <div className="p-4 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"><AlertCircle className="w-6 h-6" /></div>

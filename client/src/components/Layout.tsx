@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Calendar, CreditCard, ShieldCheck } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Layout: React.FC = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,9 +24,7 @@ const Layout: React.FC = () => {
                         <div className="flex justify-between h-16 items-center">
                             {/* Logo */}
                             <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-                                <div className="w-9 h-9 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/50">
-                                    P
-                                </div>
+                                <img src={logo} alt="CampusPark Logo" className="w-9 h-9 rounded-full shadow-lg ring-2 ring-white/50 object-cover" />
                                 <span className="text-xl font-bold text-gray-900 tracking-tight">
                                     CampusPark
                                 </span>
