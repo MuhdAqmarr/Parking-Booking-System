@@ -5,12 +5,15 @@ import toast from 'react-hot-toast';
 
 const ReservationsView: React.FC = () => {
     const [reservations, setReservations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const data = await fetchWithAuth('/api/admin/reservations');
             setReservations(data);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -34,6 +37,16 @@ const ReservationsView: React.FC = () => {
         { key: 'vehicle', label: 'User', render: (v: any) => v?.campusUser?.fullName || v?.ownerName || '-' },
         { key: 'lot', label: 'Lot', render: (l: any) => l?.lotNumber || '-' },
         { key: 'reservationDate', label: 'Date', render: (d: string) => new Date(d).toLocaleDateString() },
+        {
+            key: 'startTime',
+            label: 'Time',
+            render: (_: any, row: any) => {
+                if (!row.startTime || !row.endTime) return '-';
+                const start = new Date(row.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const end = new Date(row.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `${start} - ${end}`;
+            }
+        },
         {
             key: 'status', label: 'Status', render: (val: string) => (
                 <span className={`px-2 py-1 rounded text-xs ${val === 'Active' ? 'bg-green-100 text-green-800' :
@@ -78,6 +91,8 @@ const ReservationsView: React.FC = () => {
                     { key: 'status', label: 'Status', options: ['Active', 'Completed', 'Cancelled'] }
                 ]}
                 actions={actions}
+                onRefresh={loadData}
+                isLoading={loading}
             />
         </>
     );

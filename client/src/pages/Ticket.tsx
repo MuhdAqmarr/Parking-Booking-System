@@ -47,13 +47,17 @@ const Ticket: React.FC = () => {
 
     return (
         <div
-            className="min-h-screen flex items-center justify-center p-4 print:bg-white print:p-0 bg-cover bg-center bg-no-repeat relative pt-32 pb-10"
-            style={{ backgroundImage: `url(${HeroBackground})` }}
+            className="min-h-screen flex items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative pt-32 pb-10 print:fixed print:inset-0 print:z-[100] print:p-0 print:m-0 print:h-screen print:w-screen print:bg-cover print:bg-center print:flex print:items-center print:justify-center"
+            style={{
+                backgroundImage: `url(${HeroBackground})`,
+                printColorAdjust: 'exact',
+                WebkitPrintColorAdjust: 'exact'
+            }}
         >
             {/* Black Overlay */}
             <div className="absolute inset-0 bg-black/50 print:hidden"></div>
 
-            <div className="relative z-10 bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden print:shadow-none print:w-full print:max-w-none backdrop-blur-sm bg-white/95">
+            <div className="relative z-10 bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm bg-white/95 print:shadow-none print:border print:border-gray-200">
                 {/* Header */}
                 <div className="bg-gray-900 p-4 text-white text-center relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500"></div>

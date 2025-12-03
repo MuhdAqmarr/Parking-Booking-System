@@ -36,6 +36,9 @@ const Reserve: React.FC = () => {
     const [zones, setZones] = useState<any[]>([]);
     const [lots, setLots] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingFaculties, setLoadingFaculties] = useState(false);
+    const [loadingZones, setLoadingZones] = useState(false);
+    const [loadingLots, setLoadingLots] = useState(false);
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -57,24 +60,31 @@ const Reserve: React.FC = () => {
     }, [formData.zoneID, currentStep]);
 
     const fetchFaculties = async () => {
+        setLoadingFaculties(true);
         try {
             const res = await axios.get('/api/public/faculties');
             setFaculties(res.data);
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoadingFaculties(false);
         }
     };
 
     const fetchZones = async () => {
+        setLoadingZones(true);
         try {
             const res = await axios.get(`/api/public/zones?facultyID=${formData.facultyID}`);
             setZones(res.data);
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoadingZones(false);
         }
     };
 
     const fetchLots = async () => {
+        setLoadingLots(true);
         try {
             const res = await axios.get('/api/public/available-lots', {
                 params: {
@@ -87,6 +97,8 @@ const Reserve: React.FC = () => {
             setLots(res.data);
         } catch (err) {
             console.error(err);
+        } finally {
+            setLoadingLots(false);
         }
     };
 
@@ -337,8 +349,9 @@ const Reserve: React.FC = () => {
                                 className="w-full p-3 border border-gray-300 rounded-lg"
                                 value={formData.facultyID}
                                 onChange={(e) => setFormData({ ...formData, facultyID: e.target.value, zoneID: '' })}
+                                disabled={loadingFaculties}
                             >
-                                <option value="">Select Faculty</option>
+                                <option value="">{loadingFaculties ? 'Loading Faculties...' : 'Select Faculty'}</option>
                                 {faculties.map((f) => (
                                     <option key={f.facultyID} value={f.facultyID}>{f.facultyName}</option>
                                 ))}
@@ -347,32 +360,40 @@ const Reserve: React.FC = () => {
                         {formData.facultyID && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Zone</label>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {zones.map((z) => {
-                                        const allowed =
-                                            (formData.userType === 'Staff' && ['Staff', 'Mixed'].includes(z.zoneType)) ||
-                                            (formData.userType === 'Student' && ['Student', 'Mixed'].includes(z.zoneType)) ||
-                                            (formData.userType === 'Visitor' && ['Visitor', 'Mixed'].includes(z.zoneType));
+                                {loadingZones ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
+                                        {[1, 2, 3, 4].map(i => (
+                                            <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {zones.map((z) => {
+                                            const allowed =
+                                                (formData.userType === 'Staff' && ['Staff', 'Mixed'].includes(z.zoneType)) ||
+                                                (formData.userType === 'Student' && ['Student', 'Mixed'].includes(z.zoneType)) ||
+                                                (formData.userType === 'Visitor' && ['Visitor', 'Mixed'].includes(z.zoneType));
 
-                                        return (
-                                            <button
-                                                key={z.zoneID}
-                                                onClick={() => allowed && setFormData({ ...formData, zoneID: z.zoneID })}
-                                                disabled={!allowed}
-                                                className={`p-4 rounded-lg border text-left transition-all ${formData.zoneID === z.zoneID
-                                                    ? 'border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500'
-                                                    : allowed
-                                                        ? 'border-gray-200 hover:border-cyan-200'
-                                                        : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                                                    }`}
-                                            >
-                                                <div className="font-semibold text-gray-900">{z.zoneName}</div>
-                                                <div className="text-sm text-gray-500">{z.zoneType} • {z.capacity} spots</div>
-                                                {!allowed && <div className="text-xs text-red-500 mt-1">Not available for {formData.userType}</div>}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                            return (
+                                                <button
+                                                    key={z.zoneID}
+                                                    onClick={() => allowed && setFormData({ ...formData, zoneID: z.zoneID })}
+                                                    disabled={!allowed}
+                                                    className={`p-4 rounded-lg border text-left transition-all ${formData.zoneID === z.zoneID
+                                                        ? 'border-cyan-500 bg-cyan-50 ring-1 ring-cyan-500'
+                                                        : allowed
+                                                            ? 'border-gray-200 hover:border-cyan-200'
+                                                            : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                                                        }`}
+                                                >
+                                                    <div className="font-semibold text-gray-900">{z.zoneName}</div>
+                                                    <div className="text-sm text-gray-500">{z.zoneType} • {z.capacity} spots</div>
+                                                    {!allowed && <div className="text-xs text-red-500 mt-1">Not available for {formData.userType}</div>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         )}
                         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6">
@@ -393,24 +414,32 @@ const Reserve: React.FC = () => {
                 {currentStep === 5 && (
                     <div className="space-y-6">
                         <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Parking Lot</h2>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-                            {lots.map((lot) => (
-                                <button
-                                    key={lot.lotID}
-                                    onClick={() => !lot.isReserved && setFormData({ ...formData, lotID: lot.lotID })}
-                                    disabled={lot.isReserved}
-                                    className={`p-3 rounded-lg border text-center transition-all ${formData.lotID === lot.lotID
-                                        ? 'bg-cyan-600 text-white border-cyan-600'
-                                        : lot.isReserved
-                                            ? 'bg-red-50 text-red-400 border-red-100 cursor-not-allowed'
-                                            : 'bg-white hover:border-cyan-300 text-gray-700 border-gray-200'
-                                        }`}
-                                >
-                                    <div className="text-sm font-bold">{lot.lotNumber}</div>
-                                    <div className="text-xs">{lot.isReserved ? 'Reserved' : 'Available'}</div>
-                                </button>
-                            ))}
-                        </div>
+                        {loadingLots ? (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 animate-pulse">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
+                                    <div key={i} className="h-16 bg-gray-200 rounded-lg"></div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                                {lots.map((lot) => (
+                                    <button
+                                        key={lot.lotID}
+                                        onClick={() => !lot.isReserved && setFormData({ ...formData, lotID: lot.lotID })}
+                                        disabled={lot.isReserved}
+                                        className={`p-3 rounded-lg border text-center transition-all ${formData.lotID === lot.lotID
+                                            ? 'bg-cyan-600 text-white border-cyan-600'
+                                            : lot.isReserved
+                                                ? 'bg-red-50 text-red-400 border-red-100 cursor-not-allowed'
+                                                : 'bg-white hover:border-cyan-300 text-gray-700 border-gray-200'
+                                            }`}
+                                    >
+                                        <div className="text-sm font-bold">{lot.lotNumber}</div>
+                                        <div className="text-xs">{lot.isReserved ? 'Reserved' : 'Available'}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6">
                             <button onClick={prevStep} className="flex items-center justify-center px-6 py-3 text-gray-600 hover:text-gray-900">
                                 <ArrowLeft className="mr-2 w-4 h-4" /> Back

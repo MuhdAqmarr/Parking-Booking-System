@@ -7,6 +7,8 @@ import { ParkingLot } from '../entity/ParkingLot.js';
 import { Reservation } from '../entity/Reservation.js';
 import { Vehicle } from '../entity/Vehicle.js';
 import { Fine } from '../entity/Fine.js';
+import { Payment } from '../entity/Payment.js';
+import { Admin } from '../entity/Admin.js';
 import Stripe from 'stripe';
 import { LessThan, MoreThan, In } from 'typeorm';
 
@@ -87,15 +89,24 @@ export const getAvailableLots = async (req: Request, res: Response) => {
         });
 
         const result = lots.map(lot => {
-            const hasConflict = lot.reservations.some(res =>
-                res.reservationDate.getTime() === reservationDate.getTime() &&
-                ['Reserved', 'CheckedIn'].includes(res.status) &&
-                res.startTime < endDateTime &&
-                res.endTime > startDateTime
-            );
+            const hasConflict = lot.reservations?.some(res => {
+                const resDate = new Date(res.reservationDate);
+                const resStart = new Date(res.startTime);
+                const resEnd = new Date(res.endTime);
+
+                // Check if dates match (ignoring time component of reservationDate)
+                const isSameDate = resDate.getFullYear() === reservationDate.getFullYear() &&
+                    resDate.getMonth() === reservationDate.getMonth() &&
+                    resDate.getDate() === reservationDate.getDate();
+
+                return isSameDate &&
+                    ['Reserved', 'CheckedIn'].includes(res.status) &&
+                    resStart < endDateTime &&
+                    resEnd > startDateTime;
+            });
             return {
                 ...lot,
-                isReserved: hasConflict
+                isReserved: hasConflict || false
             };
         });
 
@@ -266,10 +277,10 @@ export const payFine = async (req: Request, res: Response) => {
         }
 
         const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
+            payment_method_types: ['card', 'fpx'],
             line_items: [{
                 price_data: {
-                    currency: 'usd',
+                    currency: 'myr',
                     product_data: {
                         name: `Fine Payment #${fine.fineID}`,
                         description: fine.remarks || 'Parking Violation',
@@ -279,7 +290,7 @@ export const payFine = async (req: Request, res: Response) => {
                 quantity: 1,
             }],
             mode: 'payment',
-            success_url: `http://localhost:5173/fines?success=true&fineID=${fine.fineID}`,
+            success_url: `http://localhost:5173/fines?success=true&fineID=${fine.fineID}&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `http://localhost:5173/fines?canceled=true`,
             metadata: {
                 fineID: fine.fineID.toString()
@@ -290,6 +301,62 @@ export const payFine = async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Payment initiation failed' });
+    }
+};
+
+export const confirmFinePayment = async (req: Request, res: Response) => {
+    const { session_id } = req.body;
+    try {
+        const session = await stripe.checkout.sessions.retrieve(session_id);
+        if (session.payment_status !== 'paid') {
+            res.status(400).json({ error: 'Payment not completed' });
+            return;
+        }
+
+        const fineID = session.metadata?.fineID;
+        if (!fineID) {
+            res.status(400).json({ error: 'Invalid session metadata' });
+            return;
+        }
+
+        const fineRepo = AppDataSource.getRepository(Fine);
+        const fine = await fineRepo.findOne({ where: { fineID: Number(fineID) } });
+
+        if (fine) {
+            // Prevent duplicate processing
+            if (fine.status === 'Paid') {
+                res.json({ success: true, message: 'Already processed' });
+                return;
+            }
+
+            fine.status = 'Paid';
+            await fineRepo.save(fine);
+
+            // Record the payment
+            const paymentRepo = AppDataSource.getRepository(Payment);
+            const adminRepo = AppDataSource.getRepository(Admin);
+
+            // Assign to first admin (System) since it's an automated payment
+            const systemAdmin = await adminRepo.findOne({ where: {} });
+
+            const payment = paymentRepo.create({
+                fineID: fine.fineID,
+                adminID: systemAdmin?.adminID || 1, // Fallback to 1 if no admin found
+                amountPaid: fine.amount,
+                paymentMethod: 'Stripe',
+                gatewayRef: session.id,
+                paymentDate: new Date(),
+                receiptNum: `RCPT-${Date.now()}`
+            });
+            await paymentRepo.save(payment);
+
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Fine not found' });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Confirmation failed' });
     }
 };
 

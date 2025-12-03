@@ -8,6 +8,7 @@ const PermitsView: React.FC = () => {
     const [permits, setPermits] = useState<any[]>([]);
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [zones, setZones] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -19,6 +20,7 @@ const PermitsView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [pData, vData, zData] = await Promise.all([
                 fetchWithAuth('/api/admin/permits'),
@@ -29,6 +31,7 @@ const PermitsView: React.FC = () => {
             setVehicles(vData);
             setZones(zData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -104,6 +107,8 @@ const PermitsView: React.FC = () => {
                 onAdd={handleAdd}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

@@ -12,7 +12,6 @@ import {
     Car,
     DollarSign,
     CheckCircle,
-    Loader2,
     FileText,
     CreditCard,
     Clock,
@@ -92,9 +91,26 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-8">Dashboard Overview</h1>
 
             {loading ? (
-                <div className="flex justify-center items-center h-64">
-                    <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
-                </div>
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-pulse">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="h-24 bg-gray-200 rounded-2xl"></div>
+                        ))}
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-pulse">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                        </div>
+                        <div className="divide-y divide-gray-200">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="px-6 py-4">
+                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </>
             ) : (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

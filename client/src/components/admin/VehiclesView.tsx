@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const VehiclesView: React.FC = () => {
     const [vehicles, setVehicles] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const VehiclesView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [vData, uData] = await Promise.all([
                 fetchWithAuth('/api/admin/vehicles'),
@@ -26,6 +28,7 @@ const VehiclesView: React.FC = () => {
             setVehicles(vData);
             setUsers(uData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -99,6 +102,8 @@ const VehiclesView: React.FC = () => {
                 onAdd={handleAdd}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

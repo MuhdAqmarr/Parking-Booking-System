@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const LotsView: React.FC = () => {
     const [lots, setLots] = useState<any[]>([]);
     const [zones, setZones] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const LotsView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [lData, zData] = await Promise.all([
                 fetchWithAuth('/api/admin/lots'),
@@ -25,6 +27,7 @@ const LotsView: React.FC = () => {
             setLots(lData);
             setZones(zData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -107,6 +110,8 @@ const LotsView: React.FC = () => {
                 onAdd={handleAdd}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

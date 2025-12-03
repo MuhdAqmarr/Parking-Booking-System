@@ -6,15 +6,18 @@ import toast from 'react-hot-toast';
 
 const FacultiesView: React.FC = () => {
     const [faculties, setFaculties] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({ facultyName: '', facultyCode: '', locationDesc: '' });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const data = await fetchWithAuth('/api/admin/faculties');
             setFaculties(data);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -77,6 +80,8 @@ const FacultiesView: React.FC = () => {
                 onAdd={handleAdd}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

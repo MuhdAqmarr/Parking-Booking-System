@@ -25,10 +25,10 @@ export class Reservation {
     @Column("date")
     reservationDate!: Date;
 
-    @Column("date")
+    @Column("timestamp")
     startTime!: Date;
 
-    @Column("date")
+    @Column("timestamp")
     endTime!: Date;
 
     @CreateDateColumn()

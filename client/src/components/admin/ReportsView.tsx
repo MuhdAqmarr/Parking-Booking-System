@@ -86,7 +86,7 @@ const ReportsView: React.FC = () => {
                 />
                 <Card
                     title="Reservations (7 Days)"
-                    value={report.reservationsTrend.reduce((acc: number, curr: any) => acc + curr._count.reservationID, 0)}
+                    value={report.reservationsTrend.reduce((acc: number, curr: any) => acc + Number(curr.count || curr.COUNT || 0), 0)}
                     sub="Total Bookings"
                     icon={Users}
                     color="bg-purple-500"
@@ -98,15 +98,15 @@ const ReportsView: React.FC = () => {
                     <h3 className="text-lg font-bold text-gray-900 mb-4">Reservation Trend</h3>
                     <div className="space-y-2">
                         {report.reservationsTrend.map((item: any) => (
-                            <div key={item.reservationDate} className="flex justify-between items-center">
-                                <span className="text-gray-600">{new Date(item.reservationDate).toLocaleDateString()}</span>
+                            <div key={item.date || item.DATE} className="flex justify-between items-center">
+                                <span className="text-gray-600">{new Date(item.date || item.DATE).toLocaleDateString()}</span>
                                 <div className="flex-1 mx-4 bg-gray-100 rounded-full h-2">
                                     <div
                                         className="bg-purple-500 h-2 rounded-full"
-                                        style={{ width: `${Math.min(item._count.reservationID * 10, 100)}%` }}
+                                        style={{ width: `${Math.min(Number(item.count || item.COUNT || 0) * 10, 100)}%` }}
                                     />
                                 </div>
-                                <span className="font-bold text-gray-900">{item._count.reservationID}</span>
+                                <span className="font-bold text-gray-900">{item.count || item.COUNT || 0}</span>
                             </div>
                         ))}
                         {report.reservationsTrend.length === 0 && <p className="text-gray-500">No data available</p>}

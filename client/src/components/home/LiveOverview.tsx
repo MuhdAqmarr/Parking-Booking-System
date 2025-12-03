@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Loader2 } from 'lucide-react';
 
 const LiveOverview: React.FC = () => {
     const [data, setData] = useState<any>(null);
@@ -14,9 +13,19 @@ const LiveOverview: React.FC = () => {
     }, []);
 
     if (loading) return (
-        <div className="py-12 flex justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
-        </div>
+        <section className="py-16 bg-gray-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12 animate-pulse">
+                    <div className="h-4 bg-gray-200 rounded w-24 mx-auto mb-2"></div>
+                    <div className="h-8 bg-gray-200 rounded w-64 mx-auto"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 animate-pulse">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-40 bg-gray-200 rounded-2xl"></div>
+                    ))}
+                </div>
+            </div>
+        </section>
     );
 
     if (!data) return null;

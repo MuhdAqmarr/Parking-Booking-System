@@ -17,7 +17,7 @@ const Layout: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col bg-gray-50 text-gray-900 font-sans relative">
             {/* Floating Navbar Container */}
-            <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+            <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 print:hidden">
                 {/* ... header content ... */}
                 <header className="w-full max-w-5xl bg-white/30 backdrop-blur-xl border border-white/20 shadow-2xl rounded-full transition-all duration-300">
                     <div className="px-6 sm:px-8">
@@ -151,7 +151,7 @@ const Layout: React.FC = () => {
                 <Outlet />
             </main>
 
-            <footer className="bg-white border-t border-gray-200 mt-auto">
+            <footer className="bg-white border-t border-gray-200 mt-auto print:hidden">
                 <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                     <p className="text-center text-gray-400 text-sm">
                         &copy; {new Date().getFullYear()} CampusPark System. All rights reserved.

@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const FinesView: React.FC = () => {
     const [fines, setFines] = useState<any[]>([]);
     const [sessions, setSessions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         sessionID: '',
@@ -16,6 +17,7 @@ const FinesView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [fData, sData] = await Promise.all([
                 fetchWithAuth('/api/admin/fines'),
@@ -24,6 +26,7 @@ const FinesView: React.FC = () => {
             setFines(fData);
             setSessions(sData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -61,7 +64,7 @@ const FinesView: React.FC = () => {
 
         { key: 'session', label: 'User', render: (s: any) => s?.vehicle?.campusUser?.fullName || 'Unknown' },
         { key: 'fineType', label: 'Type' },
-        { key: 'amount', label: 'Amount', render: (val: number) => `$${Number(val).toFixed(2)}` },
+        { key: 'amount', label: 'Amount', render: (val: number) => `RM${Number(val).toFixed(2)}` },
         {
             key: 'status', label: 'Status', render: (val: string) => (
                 <span className={`px-2 py-1 rounded text-xs ${val === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -74,21 +77,6 @@ const FinesView: React.FC = () => {
 
     return (
         <>
-            <div className="flex justify-end mb-4 space-x-2">
-                <button
-                    onClick={loadData}
-                    className="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                    Refresh
-                </button>
-                <button
-                    onClick={handleIssueFine}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                    Issue Fine
-                </button>
-            </div>
-
             <AdminTable
                 title="Fines & Violations"
                 columns={columns}
@@ -98,6 +86,9 @@ const FinesView: React.FC = () => {
                     { key: 'fineType', label: 'Type', options: ['Overstay', 'Illegal Parking', 'No Permit', 'Damage'] }
                 ]}
                 onDelete={handleDelete}
+                onAdd={handleIssueFine}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal
@@ -136,7 +127,7 @@ const FinesView: React.FC = () => {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Amount ($)</label>
+                        <label className="block text-sm font-medium text-gray-700">Amount (RM)</label>
                         <input
                             type="number"
                             className="w-full p-2 border border-gray-300 rounded mt-1"

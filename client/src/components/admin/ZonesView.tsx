@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const ZonesView: React.FC = () => {
     const [zones, setZones] = useState<any[]>([]);
     const [faculties, setFaculties] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ const ZonesView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [zData, fData] = await Promise.all([
                 fetchWithAuth('/api/admin/zones'),
@@ -25,6 +27,7 @@ const ZonesView: React.FC = () => {
             setZones(zData);
             setFaculties(fData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -91,6 +94,8 @@ const ZonesView: React.FC = () => {
                 onAdd={handleAdd}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

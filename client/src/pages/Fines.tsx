@@ -12,9 +12,23 @@ const Fines: React.FC = () => {
     const [successMsg, setSuccessMsg] = useState('');
 
     useEffect(() => {
-        if (searchParams.get('success')) {
-            setSuccessMsg('Payment successful! Thank you.');
-        }
+        const confirmPayment = async () => {
+            const success = searchParams.get('success');
+            const session_id = searchParams.get('session_id');
+
+            if (success && session_id) {
+                try {
+                    await axios.post('/api/public/fines/confirm', { session_id });
+                    setSuccessMsg('Payment confirmed! Thank you.');
+                    // Clear query params to prevent re-triggering
+                    window.history.replaceState({}, '', '/fines');
+                } catch (error) {
+                    setError('Payment confirmation failed. Please contact support.');
+                }
+            }
+        };
+
+        confirmPayment();
     }, [searchParams]);
 
     const handleSearch = async () => {
@@ -115,7 +129,16 @@ const Fines: React.FC = () => {
                 </div>
             )}
 
-            {fines.length > 0 && (
+            {loading && (
+                <div className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
+                    <div className="h-12 bg-gray-100 border-b border-gray-200"></div>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="h-16 border-b border-gray-100"></div>
+                    ))}
+                </div>
+            )}
+
+            {!loading && fines.length > 0 && (
                 <div className="bg-white rounded-xl shadow-md overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
@@ -135,7 +158,7 @@ const Fines: React.FC = () => {
                                         {new Date(fine.issuedDate).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500">{fine.remarks || fine.fineType}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${fine.amount.toFixed(2)}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">RM{fine.amount.toFixed(2)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button
                                             onClick={() => handlePay(fine.fineID)}

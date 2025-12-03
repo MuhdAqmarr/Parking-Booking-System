@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import Modal from './Modal';
 
 interface Column {
@@ -22,15 +22,26 @@ interface AdminTableProps {
     onAdd?: () => void;
     onEdit?: (item: any) => void;
     onDelete?: (item: any) => void;
+    onRefresh?: () => void;
+    isLoading?: boolean;
     actions?: (item: any) => React.ReactNode;
 }
 
-const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, onAdd, onEdit, onDelete, actions }) => {
+const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, onAdd, onEdit, onDelete, onRefresh, isLoading, actions }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [itemToDelete, setItemToDelete] = useState<any>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const itemsPerPage = 10;
+
+    const handleRefresh = async () => {
+        if (onRefresh) {
+            setIsRefreshing(true);
+            await onRefresh();
+            setTimeout(() => setIsRefreshing(false), 500);
+        }
+    };
 
     // Filter Logic
     const filteredData = data.filter((row) => {
@@ -104,6 +115,16 @@ const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, 
                             }}
                         />
                     </div>
+                    {onRefresh && (
+                        <button
+                            onClick={handleRefresh}
+                            className={`bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto ${isRefreshing || isLoading ? 'animate-spin' : ''}`}
+                            title="Refresh Data"
+                            disabled={isRefreshing || isLoading}
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isRefreshing || isLoading ? 'animate-spin' : ''}`} />
+                        </button>
+                    )}
                     {onAdd && (
                         <button
                             onClick={onAdd}
@@ -137,36 +158,56 @@ const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, 
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                            {paginatedData.map((row, idx) => (
-                                <tr key={row.id || row[columns[0].key] || idx} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {startIndex + idx + 1}
-                                    </td>
-                                    {columns.map((col) => (
-                                        <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {col.render ? col.render(row[col.key], row) : row[col.key]}
+                            {isLoading ? (
+                                Array.from({ length: 5 }).map((_, idx) => (
+                                    <tr key={idx} className="animate-pulse">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="h-4 bg-gray-200 rounded w-8"></div>
                                         </td>
-                                    ))}
-                                    {(onEdit || onDelete || actions) && (
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
-                                            {actions && actions(row)}
-                                            {onEdit && (
-                                                <button onClick={() => onEdit(row)} className="text-cyan-600 hover:text-cyan-900">
-                                                    <Edit2 className="w-4 h-4" />
-                                                </button>
-                                            )}
-                                            {onDelete && (
-                                                <button onClick={() => setItemToDelete(row)} className="text-red-600 hover:text-red-900">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            )}
+                                        {columns.map((col, colIdx) => (
+                                            <td key={colIdx} className="px-6 py-4 whitespace-nowrap">
+                                                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                            </td>
+                                        ))}
+                                        {(onEdit || onDelete || actions) && (
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="h-4 bg-gray-200 rounded w-1/2 ml-auto"></div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))
+                            ) : (
+                                paginatedData.map((row, idx) => (
+                                    <tr key={row.id || row[columns[0].key] || idx} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {startIndex + idx + 1}
                                         </td>
-                                    )}
-                                </tr>
-                            ))}
-                            {paginatedData.length === 0 && (
+                                        {columns.map((col) => (
+                                            <td key={col.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {col.render ? col.render(row[col.key], row) : row[col.key]}
+                                            </td>
+                                        ))}
+                                        {(onEdit || onDelete || actions) && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end gap-2">
+                                                {actions && actions(row)}
+                                                {onEdit && (
+                                                    <button onClick={() => onEdit(row)} className="text-cyan-600 hover:text-cyan-900">
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {onDelete && (
+                                                    <button onClick={() => setItemToDelete(row)} className="text-red-600 hover:text-red-900">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))
+                            )}
+                            {!isLoading && paginatedData.length === 0 && (
                                 <tr>
-                                    <td colSpan={columns.length + (onEdit || onDelete || actions ? 1 : 0)} className="px-6 py-8 text-center text-gray-500">
+                                    <td colSpan={columns.length + (onEdit || onDelete || actions ? 2 : 1)} className="px-6 py-8 text-center text-gray-500">
                                         No data found.
                                     </td>
                                 </tr>

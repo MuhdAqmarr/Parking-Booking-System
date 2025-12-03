@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 const PaymentsView: React.FC = () => {
     const [payments, setPayments] = useState<any[]>([]);
     const [fines, setFines] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         fineID: '',
@@ -15,6 +16,7 @@ const PaymentsView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [pData, fData] = await Promise.all([
                 fetchWithAuth('/api/admin/payments'),
@@ -23,6 +25,7 @@ const PaymentsView: React.FC = () => {
             setPayments(pData);
             setFines(fData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -60,7 +63,7 @@ const PaymentsView: React.FC = () => {
     const columns = [
 
         { key: 'fineID', label: 'Fine ID' },
-        { key: 'amountPaid', label: 'Amount', render: (val: number) => `$${val}` },
+        { key: 'amountPaid', label: 'Amount', render: (val: number) => `RM${val}` },
         { key: 'paymentMethod', label: 'Method' },
         { key: 'receiptNum', label: 'Receipt' },
         { key: 'paymentDate', label: 'Date', render: (d: string) => new Date(d).toLocaleDateString() },
@@ -68,20 +71,14 @@ const PaymentsView: React.FC = () => {
 
     return (
         <>
-            <div className="flex justify-end mb-4">
-                <button
-                    onClick={handleRecordPayment}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
-                >
-                    Record Payment
-                </button>
-            </div>
-
             <AdminTable
                 title="Payments"
                 columns={columns}
                 data={payments}
                 onDelete={handleDelete}
+                onAdd={handleRecordPayment}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal
@@ -107,7 +104,7 @@ const PaymentsView: React.FC = () => {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Amount Paid ($)</label>
+                        <label className="block text-sm font-medium text-gray-700">Amount Paid (RM)</label>
                         <input
                             type="number"
                             className="w-full p-2 border border-gray-300 rounded mt-1"

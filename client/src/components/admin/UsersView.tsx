@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 
 const UsersView: React.FC = () => {
     const [users, setUsers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentItem, setCurrentItem] = useState<any>(null);
     const [formData, setFormData] = useState({
@@ -15,10 +16,12 @@ const UsersView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const data = await fetchWithAuth('/api/admin/campus-users');
             setUsers(data);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -81,6 +84,8 @@ const UsersView: React.FC = () => {
                 ]}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal

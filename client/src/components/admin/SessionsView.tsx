@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 const SessionsView: React.FC = () => {
     const [sessions, setSessions] = useState<any[]>([]);
     const [lots, setLots] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
         plateNum: '',
@@ -16,6 +17,7 @@ const SessionsView: React.FC = () => {
     });
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [sData, lData] = await Promise.all([
                 fetchWithAuth('/api/admin/sessions'),
@@ -24,6 +26,7 @@ const SessionsView: React.FC = () => {
             setSessions(sData);
             setLots(lData);
         } catch (error) { console.error(error); }
+        finally { setLoading(false); }
     };
 
     useEffect(() => { loadData(); }, []);
@@ -98,21 +101,15 @@ const SessionsView: React.FC = () => {
 
     return (
         <>
-            <div className="flex justify-end mb-4">
-                <button
-                    onClick={handleCheckIn}
-                    className="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700 transition-colors"
-                >
-                    New Check-in
-                </button>
-            </div>
-
             <AdminTable
                 title="Parking Sessions"
                 columns={columns}
                 data={sessions}
                 actions={actions}
                 onDelete={handleDelete}
+                onAdd={handleCheckIn}
+                onRefresh={loadData}
+                isLoading={loading}
             />
 
             <Modal
