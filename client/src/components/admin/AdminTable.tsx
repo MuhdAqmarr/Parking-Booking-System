@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 
 interface Column {
     key: string;
@@ -88,17 +89,18 @@ const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, 
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                     <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         {filters?.map(filter => (
-                            <select
-                                key={filter.key}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent bg-white text-sm w-full sm:w-auto"
-                                value={activeFilters[filter.key] || ''}
-                                onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                            >
-                                <option value="">All {filter.label}</option>
-                                {filter.options.map(opt => (
-                                    <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                            </select>
+                            <div key={filter.key} className="w-full sm:w-48">
+                                <CustomSelect
+                                    label=""
+                                    value={activeFilters[filter.key] || ''}
+                                    onChange={(val) => handleFilterChange(filter.key, String(val))}
+                                    options={[
+                                        { value: '', label: `All ${filter.label}` },
+                                        ...filter.options.map(opt => ({ value: opt, label: opt }))
+                                    ]}
+                                    placeholder={`Filter by ${filter.label}`}
+                                />
+                            </div>
                         ))}
                     </div>
 

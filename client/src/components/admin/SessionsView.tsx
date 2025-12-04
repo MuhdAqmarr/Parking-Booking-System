@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import { LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -32,7 +33,7 @@ const SessionsView: React.FC = () => {
     useEffect(() => { loadData(); }, []);
 
     const handleCheckIn = () => {
-        setFormData({ plateNum: '', lotID: lots.find(l => l.status === 'Available')?.lotID || '', proofCode: '' });
+        setFormData({ plateNum: '', lotID: '', proofCode: '' });
         setIsModalOpen(true);
     };
 
@@ -78,12 +79,41 @@ const SessionsView: React.FC = () => {
         {
             key: 'status',
             label: 'Status',
-            render: (_: any, row: any) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${!row.exitTime ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                    {!row.exitTime ? 'Active' : 'Completed'}
-                </span>
-            )
+            render: (_: any, row: any) => {
+                if (row.exitTime) {
+                    // Completed session - check if it was an overstay
+                    if (row.isViolation) {
+                        return (
+                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                                Completed (Overstay)
+                            </span>
+                        );
+                    }
+                    return (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                            Completed
+                        </span>
+                    );
+                }
+
+                // Check for overstay
+                const now = new Date();
+                const isOverstay = row.reservation?.endTime && new Date(row.reservation.endTime) < now;
+
+                if (isOverstay) {
+                    return (
+                        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-800">
+                            Overstay
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                        Active
+                    </span>
+                );
+            }
         }
     ];
 
@@ -98,6 +128,14 @@ const SessionsView: React.FC = () => {
             </button>
         )
     );
+
+    const lotOptions = lots
+        .filter(l => l.status === 'Available')
+        .map(l => ({
+            value: l.lotID,
+            label: `${l.lotNumber} (${l.zone?.zoneName})`,
+            badges: [{ text: 'Available', color: 'green' as const }]
+        }));
 
     return (
         <>
@@ -128,18 +166,13 @@ const SessionsView: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">Parking Lot</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
+                        <CustomSelect
+                            label="Parking Lot (Optional if Reserved)"
                             value={formData.lotID}
-                            onChange={e => setFormData({ ...formData, lotID: e.target.value })}
-                            required
-                        >
-                            <option value="">Select Lot</option>
-                            {lots.filter(l => l.status === 'Available').map(l => (
-                                <option key={l.lotID} value={l.lotID}>{l.lotNumber} ({l.zone?.zoneName})</option>
-                            ))}
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, lotID: String(val) })}
+                            options={lotOptions}
+                            placeholder="Select Lot (or Auto-detect)"
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Reservation Code (Optional)</label>

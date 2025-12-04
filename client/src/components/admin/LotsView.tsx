@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -97,6 +98,18 @@ const LotsView: React.FC = () => {
 
     const zoneOptions = Array.from(new Set(zones.map(z => z.zoneName)));
 
+    const zoneSelectOptions = zones.map(z => ({
+        value: z.zoneID,
+        label: z.zoneName
+    }));
+
+    const statusOptions = [
+        { value: 'Available', label: 'Available', badges: [{ text: 'Available', color: 'green' as const }] },
+        { value: 'Occupied', label: 'Occupied', badges: [{ text: 'Occupied', color: 'red' as const }] },
+        { value: 'Reserved', label: 'Reserved', badges: [{ text: 'Reserved', color: 'orange' as const }] },
+        { value: 'Maintenance', label: 'Maintenance', badges: [{ text: 'Maintenance', color: 'gray' as const }] }
+    ];
+
     return (
         <>
             <AdminTable
@@ -120,19 +133,13 @@ const LotsView: React.FC = () => {
                 title={currentItem ? 'Edit Lot' : 'Add Lot'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Zone</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.zoneID}
-                            onChange={e => setFormData({ ...formData, zoneID: e.target.value })}
-                            required
-                        >
-                            {zones.map(z => (
-                                <option key={z.zoneID} value={z.zoneID}>{z.zoneName}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Zone"
+                        value={formData.zoneID}
+                        onChange={(val) => setFormData({ ...formData, zoneID: String(val) })}
+                        options={zoneSelectOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Lot Number</label>
                         <input
@@ -142,19 +149,12 @@ const LotsView: React.FC = () => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.status}
-                            onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        >
-                            <option value="Available">Available</option>
-                            <option value="Occupied">Occupied</option>
-                            <option value="Reserved">Reserved</option>
-                            <option value="Maintenance">Maintenance</option>
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Status"
+                        value={formData.status}
+                        onChange={(val) => setFormData({ ...formData, status: String(val) })}
+                        options={statusOptions}
+                    />
                     <div className="flex items-center">
                         <input
                             type="checkbox"

@@ -204,8 +204,26 @@ export const deleteZone = async (req: Request, res: Response) => {
 export const getLots = async (req: Request, res: Response) => {
     try {
         const repo = AppDataSource.getRepository(ParkingLot);
-        const lots = await repo.find({ relations: ["zone"] });
-        res.json(lots);
+        const lots = await repo.find({ relations: ["zone", "reservations"] });
+
+        const now = new Date();
+        const lotsWithStatus = lots.map(lot => {
+            let displayStatus = lot.status;
+
+            if (displayStatus === 'Available') {
+                const isReserved = lot.reservations.some(r =>
+                    ['Reserved', 'CheckedIn'].includes(r.status) &&
+                    new Date(r.startTime) <= now &&
+                    new Date(r.endTime) >= now
+                );
+                if (isReserved) {
+                    displayStatus = 'Reserved';
+                }
+            }
+            return { ...lot, status: displayStatus };
+        });
+
+        res.json(lotsWithStatus);
     } catch (error) { res.status(500).json({ error: 'Error fetching lots' }); }
 };
 
@@ -365,6 +383,7 @@ export const checkIn = async (req: Request, res: Response) => {
     try {
         let reservationID = null;
         let vehicleID = null;
+        let finalLotID = lotID ? parseInt(lotID) : null;
 
         const vehicleRepo = AppDataSource.getRepository(Vehicle);
         const vehicle = await vehicleRepo.findOne({ where: { plateNum } });
@@ -373,22 +392,45 @@ export const checkIn = async (req: Request, res: Response) => {
         }
         vehicleID = vehicle.vehicleID;
 
+        const resRepo = AppDataSource.getRepository(Reservation);
+        let reservation = null;
+
         if (proofCode) {
-            const resRepo = AppDataSource.getRepository(Reservation);
-            const reservation = await resRepo.findOne({ where: { proofCode } });
-            if (reservation) {
-                if (reservation.vehicleID !== vehicleID) {
-                    return res.status(400).json({ error: 'Reservation does not match vehicle' });
-                }
-                reservationID = reservation.reservationID;
-                await resRepo.update(reservationID, { status: 'CheckedIn' });
+            reservation = await resRepo.findOne({ where: { proofCode } });
+        } else {
+            // Auto-detect reservation for today
+            const today = new Date();
+            const reservations = await resRepo.find({
+                where: { vehicleID, status: 'Reserved' }
+            });
+
+            reservation = reservations.find(r => {
+                const resDate = new Date(r.reservationDate);
+                return resDate.toDateString() === today.toDateString();
+            }) || null;
+        }
+
+        if (reservation) {
+            if (reservation.vehicleID !== vehicleID) {
+                return res.status(400).json({ error: 'Reservation does not match vehicle' });
             }
+            reservationID = reservation.reservationID;
+            await resRepo.update(reservationID, { status: 'CheckedIn' });
+
+            // Auto-assign lot from reservation if not provided
+            if (!finalLotID) {
+                finalLotID = reservation.lotID;
+            }
+        }
+
+        if (!finalLotID) {
+            return res.status(400).json({ error: 'Parking Lot is required (unless valid reservation found)' });
         }
 
         const sessionRepo = AppDataSource.getRepository(ParkingSession);
         const session = sessionRepo.create({
             vehicleID,
-            lotID,
+            lotID: finalLotID,
             reservationID: reservationID || undefined,
             entryTime: new Date(),
             sessionType: reservationID ? 'Reservation' : 'WalkIn'
@@ -396,7 +438,7 @@ export const checkIn = async (req: Request, res: Response) => {
         await sessionRepo.save(session);
 
         const lotRepo = AppDataSource.getRepository(ParkingLot);
-        await lotRepo.update(lotID, { status: 'Occupied' });
+        await lotRepo.update(finalLotID, { status: 'Occupied' });
 
         res.json(session);
     } catch (error) {
@@ -409,10 +451,28 @@ export const checkOut = async (req: Request, res: Response) => {
     const { sessionID } = req.params;
     try {
         const sessionRepo = AppDataSource.getRepository(ParkingSession);
-        await sessionRepo.update(sessionID, { exitTime: new Date() });
-        const session = await sessionRepo.findOne({ where: { sessionID: parseInt(sessionID) }, relations: ["lot"] });
+        const exitTime = new Date();
+
+        // Fetch session with reservation to check for overstay
+        const session = await sessionRepo.findOne({
+            where: { sessionID: parseInt(sessionID) },
+            relations: ["lot", "reservation"]
+        });
 
         if (session) {
+            // Check for overstay
+            let isOverstay = false;
+            if (session.reservation?.endTime) {
+                const reservationEndTime = new Date(session.reservation.endTime);
+                isOverstay = exitTime > reservationEndTime;
+            }
+
+            // Update session with exitTime and violation flag
+            await sessionRepo.update(sessionID, {
+                exitTime,
+                isViolation: isOverstay
+            });
+
             const lotRepo = AppDataSource.getRepository(ParkingLot);
             await lotRepo.update(session.lotID, { status: 'Available' });
 

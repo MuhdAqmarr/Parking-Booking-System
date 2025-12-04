@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -85,6 +86,18 @@ const ZonesView: React.FC = () => {
         { key: 'occupancyRate', label: 'Occupancy %', render: (val: number) => `${val.toFixed(1)}%` },
     ];
 
+    const facultyOptions = faculties.map(f => ({
+        value: f.facultyID,
+        label: f.facultyName
+    }));
+
+    const typeOptions = [
+        { value: 'Student', label: 'Student' },
+        { value: 'Staff', label: 'Staff' },
+        { value: 'Visitor', label: 'Visitor' },
+        { value: 'Disabled', label: 'Disabled' }
+    ];
+
     return (
         <>
             <AdminTable
@@ -104,19 +117,13 @@ const ZonesView: React.FC = () => {
                 title={currentItem ? 'Edit Zone' : 'Add Zone'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Faculty</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.facultyID}
-                            onChange={e => setFormData({ ...formData, facultyID: e.target.value })}
-                            required
-                        >
-                            {faculties.map(f => (
-                                <option key={f.facultyID} value={f.facultyID}>{f.facultyName}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Faculty"
+                        value={formData.facultyID}
+                        onChange={(val) => setFormData({ ...formData, facultyID: String(val) })}
+                        options={facultyOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Name</label>
                         <input
@@ -126,19 +133,12 @@ const ZonesView: React.FC = () => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Type</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.zoneType}
-                            onChange={e => setFormData({ ...formData, zoneType: e.target.value })}
-                        >
-                            <option value="Student">Student</option>
-                            <option value="Staff">Staff</option>
-                            <option value="Visitor">Visitor</option>
-                            <option value="Disabled">Disabled</option>
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Type"
+                        value={formData.zoneType}
+                        onChange={(val) => setFormData({ ...formData, zoneType: String(val) })}
+                        options={typeOptions}
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Capacity</label>
                         <input

@@ -31,7 +31,6 @@ const ReservationsView: React.FC = () => {
     };
 
     const columns = [
-
         { key: 'proofCode', label: 'Code' },
         { key: 'vehicle', label: 'Vehicle', render: (v: any) => v?.plateNum || '-' },
         { key: 'vehicle', label: 'User', render: (v: any) => v?.campusUser?.fullName || v?.ownerName || '-' },
@@ -48,19 +47,24 @@ const ReservationsView: React.FC = () => {
             }
         },
         {
-            key: 'status', label: 'Status', render: (val: string) => (
-                <span className={`px-2 py-1 rounded text-xs ${val === 'Active' ? 'bg-green-100 text-green-800' :
-                    val === 'Cancelled' ? 'bg-red-100 text-red-800' :
-                        val === 'Completed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                    {val}
-                </span>
-            )
+            key: 'status', label: 'Status', render: (val: string) => {
+                let colorClass = 'bg-gray-100 text-gray-800';
+                if (val === 'Reserved') colorClass = 'bg-yellow-100 text-yellow-800';
+                else if (val === 'CheckedIn') colorClass = 'bg-green-100 text-green-800';
+                else if (val === 'Completed') colorClass = 'bg-blue-100 text-blue-800';
+                else if (val === 'Cancelled') colorClass = 'bg-red-100 text-red-800';
+
+                return (
+                    <span className={`px-2 py-1 rounded text-xs ${colorClass}`}>
+                        {val}
+                    </span>
+                );
+            }
         },
     ];
 
     const actions = (item: any) => {
-        const isActive = item.status === 'Active';
+        const isActive = ['Reserved', 'CheckedIn'].includes(item.status);
         return (
             <div className="flex gap-2">
                 <button
@@ -88,7 +92,7 @@ const ReservationsView: React.FC = () => {
                 columns={columns}
                 data={reservations}
                 filters={[
-                    { key: 'status', label: 'Status', options: ['Active', 'Completed', 'Cancelled'] }
+                    { key: 'status', label: 'Status', options: ['Reserved', 'CheckedIn', 'Completed', 'Cancelled'] }
                 ]}
                 actions={actions}
                 onRefresh={loadData}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -89,6 +90,17 @@ const VehiclesView: React.FC = () => {
         { key: 'ownerType', label: 'Owner Type' },
     ];
 
+    const userOptions = users.map(u => ({
+        value: u.campusUserID,
+        label: `${u.fullName} (${u.userType})`
+    }));
+
+    const typeOptions = [
+        { value: 'Car', label: 'Car' },
+        { value: 'Motorcycle', label: 'Motorcycle' },
+        { value: 'Truck', label: 'Truck' }
+    ];
+
     return (
         <>
             <AdminTable
@@ -112,19 +124,13 @@ const VehiclesView: React.FC = () => {
                 title={currentItem ? 'Edit Vehicle' : 'Register Vehicle'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Owner (User)</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.campusUserID}
-                            onChange={e => setFormData({ ...formData, campusUserID: e.target.value })}
-                            required
-                        >
-                            {users.map(u => (
-                                <option key={u.campusUserID} value={u.campusUserID}>{u.fullName} ({u.userType})</option>
-                            ))}
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Owner (User)"
+                        value={formData.campusUserID}
+                        onChange={(val) => setFormData({ ...formData, campusUserID: String(val) })}
+                        options={userOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Plate Number</label>
                         <input
@@ -134,18 +140,12 @@ const VehiclesView: React.FC = () => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Type</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.vehicleType}
-                            onChange={e => setFormData({ ...formData, vehicleType: e.target.value })}
-                        >
-                            <option value="Car">Car</option>
-                            <option value="Motorcycle">Motorcycle</option>
-                            <option value="Truck">Truck</option>
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Type"
+                        value={formData.vehicleType}
+                        onChange={(val) => setFormData({ ...formData, vehicleType: String(val) })}
+                        options={typeOptions}
+                    />
                     <button type="submit" className="w-full bg-cyan-600 text-white py-2 rounded hover:bg-cyan-700">
                         Save
                     </button>

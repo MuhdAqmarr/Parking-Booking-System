@@ -21,7 +21,7 @@ export class ParkingSession {
     @CreateDateColumn()
     entryTime!: Date;
 
-    @Column("date", { nullable: true })
+    @Column("timestamp", { nullable: true })
     exitTime!: Date;
 
     @Column("varchar2")

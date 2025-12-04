@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -75,6 +76,30 @@ const FinesView: React.FC = () => {
         { key: 'issuedDate', label: 'Date', render: (d: string) => new Date(d).toLocaleDateString() },
     ];
 
+    // Prepare options for CustomSelect
+    const sessionOptions = sessions.map(s => {
+        const isViolation = s.isViolation === true || s.isViolation === 1;
+        const isActiveOverstay = !s.exitTime && s.reservation?.endTime && new Date(s.reservation.endTime) < new Date();
+
+        const badges: any[] = [];
+        if (isViolation) badges.push({ text: 'VIOLATION', color: 'red' });
+        if (isActiveOverstay) badges.push({ text: 'OVERSTAY', color: 'orange' });
+
+        return {
+            value: s.sessionID,
+            label: `#${s.sessionID} - ${s.vehicle?.plateNum}`,
+            subLabel: new Date(s.entryTime).toLocaleString(),
+            badges
+        };
+    });
+
+    const typeOptions = [
+        { value: 'Overstay', label: 'Overstay' },
+        { value: 'Illegal Parking', label: 'Illegal Parking' },
+        { value: 'No Permit', label: 'No Permit' },
+        { value: 'Damage', label: 'Damage' }
+    ];
+
     return (
         <>
             <AdminTable
@@ -97,35 +122,22 @@ const FinesView: React.FC = () => {
                 title="Issue Fine"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Session (Vehicle)</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.sessionID}
-                            onChange={e => setFormData({ ...formData, sessionID: e.target.value })}
-                            required
-                        >
-                            <option value="">Select Session</option>
-                            {sessions.map(s => (
-                                <option key={s.sessionID} value={s.sessionID}>
-                                    #{s.sessionID} - {s.vehicle?.plateNum} ({new Date(s.entryTime).toLocaleDateString()})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Type</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.fineType}
-                            onChange={e => setFormData({ ...formData, fineType: e.target.value })}
-                        >
-                            <option value="Overstay">Overstay</option>
-                            <option value="Illegal Parking">Illegal Parking</option>
-                            <option value="No Permit">No Permit</option>
-                            <option value="Damage">Damage</option>
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Session (Vehicle)"
+                        value={formData.sessionID}
+                        onChange={(val) => setFormData({ ...formData, sessionID: String(val) })}
+                        options={sessionOptions}
+                        placeholder="Select Session"
+                        required
+                    />
+
+                    <CustomSelect
+                        label="Type"
+                        value={formData.fineType}
+                        onChange={(val) => setFormData({ ...formData, fineType: String(val) })}
+                        options={typeOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Amount (RM)</label>
                         <input

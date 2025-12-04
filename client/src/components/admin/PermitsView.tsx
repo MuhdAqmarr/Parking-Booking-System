@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -98,6 +99,22 @@ const PermitsView: React.FC = () => {
         { key: 'status', label: 'Status' },
     ];
 
+    const vehicleOptions = vehicles.map(v => ({
+        value: v.vehicleID,
+        label: v.plateNum
+    }));
+
+    const zoneOptions = zones.map(z => ({
+        value: z.zoneID,
+        label: z.zoneName
+    }));
+
+    const statusOptions = [
+        { value: 'Active', label: 'Active', badges: [{ text: 'Active', color: 'green' as const }] },
+        { value: 'Expired', label: 'Expired', badges: [{ text: 'Expired', color: 'red' as const }] },
+        { value: 'Revoked', label: 'Revoked', badges: [{ text: 'Revoked', color: 'gray' as const }] }
+    ];
+
     return (
         <>
             <AdminTable
@@ -117,32 +134,20 @@ const PermitsView: React.FC = () => {
                 title={currentItem ? 'Edit Permit' : 'Issue Permit'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Vehicle</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.vehicleID}
-                            onChange={e => setFormData({ ...formData, vehicleID: e.target.value })}
-                            required
-                        >
-                            {vehicles.map(v => (
-                                <option key={v.vehicleID} value={v.vehicleID}>{v.plateNum}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Zone</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.zoneID}
-                            onChange={e => setFormData({ ...formData, zoneID: e.target.value })}
-                            required
-                        >
-                            {zones.map(z => (
-                                <option key={z.zoneID} value={z.zoneID}>{z.zoneName}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Vehicle"
+                        value={formData.vehicleID}
+                        onChange={(val) => setFormData({ ...formData, vehicleID: String(val) })}
+                        options={vehicleOptions}
+                        required
+                    />
+                    <CustomSelect
+                        label="Zone"
+                        value={formData.zoneID}
+                        onChange={(val) => setFormData({ ...formData, zoneID: String(val) })}
+                        options={zoneOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Issue Date</label>
                         <input
@@ -163,18 +168,12 @@ const PermitsView: React.FC = () => {
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Status</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.status}
-                            onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        >
-                            <option value="Active">Active</option>
-                            <option value="Expired">Expired</option>
-                            <option value="Revoked">Revoked</option>
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Status"
+                        value={formData.status}
+                        onChange={(val) => setFormData({ ...formData, status: String(val) })}
+                        options={statusOptions}
+                    />
                     <button type="submit" className="w-full bg-cyan-600 text-white py-2 rounded hover:bg-cyan-700">
                         Save
                     </button>

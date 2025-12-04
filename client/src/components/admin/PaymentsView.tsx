@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminTable from './AdminTable';
 import Modal from './Modal';
+import CustomSelect from '../ui/CustomSelect';
 import { fetchWithAuth } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -69,6 +70,11 @@ const PaymentsView: React.FC = () => {
         { key: 'paymentDate', label: 'Date', render: (d: string) => new Date(d).toLocaleDateString() },
     ];
 
+    const fineOptions = fines.filter(f => f.status === 'Unpaid').map(f => ({
+        value: f.fineID,
+        label: `#${f.fineID} - RM${f.amount} (${f.fineType})`
+    }));
+
     return (
         <>
             <AdminTable
@@ -87,22 +93,13 @@ const PaymentsView: React.FC = () => {
                 title="Record Cash Payment"
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Fine</label>
-                        <select
-                            className="w-full p-2 border border-gray-300 rounded mt-1"
-                            value={formData.fineID}
-                            onChange={e => setFormData({ ...formData, fineID: e.target.value })}
-                            required
-                        >
-                            <option value="">Select Fine</option>
-                            {fines.filter(f => f.status === 'Unpaid').map(f => (
-                                <option key={f.fineID} value={f.fineID}>
-                                    #{f.fineID} - ${f.amount} ({f.fineType})
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    <CustomSelect
+                        label="Fine"
+                        value={formData.fineID}
+                        onChange={(val) => setFormData({ ...formData, fineID: String(val) })}
+                        options={fineOptions}
+                        required
+                    />
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Amount Paid (RM)</label>
                         <input

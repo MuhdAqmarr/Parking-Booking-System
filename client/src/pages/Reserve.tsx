@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Car, Calendar, MapPin, User, ArrowRight, ArrowLeft } from 'lucide-react';
+import CustomSelect from '../components/ui/CustomSelect';
 
 const steps = [
     { id: 1, name: 'User Type', icon: User },
@@ -146,6 +147,17 @@ const Reserve: React.FC = () => {
     const nextStep = () => setCurrentStep(prev => prev + 1);
     const prevStep = () => setCurrentStep(prev => prev - 1);
 
+    const vehicleTypeOptions = [
+        { value: 'Car', label: 'Car' },
+        { value: 'Motorcycle', label: 'Motorcycle' },
+        { value: 'Truck', label: 'Truck' }
+    ];
+
+    const facultyOptions = faculties.map(f => ({
+        value: f.facultyID,
+        label: f.facultyName
+    }));
+
     return (
         <div className="max-w-4xl mx-auto px-4 py-4 sm:py-8">
             {/* Stepper */}
@@ -269,16 +281,12 @@ const Reserve: React.FC = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
-                                <select
-                                    className="w-full p-3 border border-gray-300 rounded-lg"
+                                <CustomSelect
+                                    label="Vehicle Type"
                                     value={formData.vehicleType}
-                                    onChange={(e) => setFormData({ ...formData, vehicleType: e.target.value })}
-                                >
-                                    <option value="Car">Car</option>
-                                    <option value="Motorcycle">Motorcycle</option>
-                                    <option value="Truck">Truck</option>
-                                </select>
+                                    onChange={(val) => setFormData({ ...formData, vehicleType: String(val) })}
+                                    options={vehicleTypeOptions}
+                                />
                             </div>
                         </div>
                         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6">
@@ -344,18 +352,14 @@ const Reserve: React.FC = () => {
                     <div className="space-y-6">
                         <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Select Location</h2>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Faculty</label>
-                            <select
-                                className="w-full p-3 border border-gray-300 rounded-lg"
+                            <CustomSelect
+                                label="Faculty"
                                 value={formData.facultyID}
-                                onChange={(e) => setFormData({ ...formData, facultyID: e.target.value, zoneID: '' })}
+                                onChange={(val) => setFormData({ ...formData, facultyID: String(val), zoneID: '' })}
+                                options={facultyOptions}
+                                placeholder={loadingFaculties ? 'Loading Faculties...' : 'Select Faculty'}
                                 disabled={loadingFaculties}
-                            >
-                                <option value="">{loadingFaculties ? 'Loading Faculties...' : 'Select Faculty'}</option>
-                                {faculties.map((f) => (
-                                    <option key={f.facultyID} value={f.facultyID}>{f.facultyName}</option>
-                                ))}
-                            </select>
+                            />
                         </div>
                         {formData.facultyID && (
                             <div>

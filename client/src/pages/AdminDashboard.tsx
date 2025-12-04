@@ -199,8 +199,8 @@ const AdminDashboard: React.FC = () => {
             `}>
                 <div className="h-full flex flex-col">
                     <div className="h-16 flex items-center px-6 border-b border-gray-200">
-                        <div className="w-8 h-8 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-lg flex items-center justify-center text-white font-bold mr-3">
-                            P
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
+                            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-xl font-bold text-gray-900">Admin Panel</span>
                         <button
