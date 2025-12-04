@@ -150,6 +150,134 @@ const ReportsView: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">Revenue Trend</h3>
+                    <div className="flex gap-4">
+                        {/* Y-Axis Labels */}
+                        <div className="flex flex-col justify-between h-64 pb-8 pt-4 text-xs text-gray-400 font-medium text-right min-w-[30px]">
+                            {(() => {
+                                const maxRevenue = Math.max(...(report.revenueTrend || []).map((i: any) => Number(i.total || i.TOTAL || 0)), 100);
+                                return [1, 0.75, 0.5, 0.25, 0].map((ratio, i) => (
+                                    <span key={i}>RM{Math.round(maxRevenue * ratio)}</span>
+                                ));
+                            })()}
+                        </div>
+
+                        {/* Chart Area */}
+                        <div className="flex-1 h-64 pt-4 pb-8 relative">
+                            {/* Background Grid */}
+                            <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 pt-4">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="w-full border-t border-gray-100 border-dashed"></div>
+                                ))}
+                            </div>
+
+                            {(() => {
+                                const data = report.revenueTrend || [];
+                                if (data.length === 0) {
+                                    return (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400 italic">
+                                            No revenue data available
+                                        </div>
+                                    );
+                                }
+
+                                const maxRevenue = Math.max(...data.map((i: any) => Number(i.total || i.TOTAL || 0)), 100);
+                                const width = 100;
+                                const height = 100;
+                                const padding = 2;
+
+                                // Calculate points for the line
+                                const points = data.map((item: any, index: number) => {
+                                    const total = Number(item.total || item.TOTAL || 0);
+                                    const x = (index / (data.length - 1)) * (width - padding * 2) + padding;
+                                    const y = height - padding - ((total / maxRevenue) * (height - padding * 2));
+                                    return { x, y, total, date: item.date || item.DATE };
+                                });
+
+                                // Create SVG path for line
+                                const linePath = points.map((p: any, i: number) =>
+                                    `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+                                ).join(' ');
+
+                                // Create SVG path for area (same as line but closed at bottom)
+                                const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
+
+                                return (
+                                    <div className="relative w-full h-full">
+                                        <svg
+                                            viewBox={`0 0 ${width} ${height}`}
+                                            className="w-full h-full"
+                                            preserveAspectRatio="none"
+                                        >
+                                            {/* Gradient definition */}
+                                            <defs>
+                                                <linearGradient id="revenueGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                    <stop offset="0%" stopColor="rgb(16, 185, 129)" stopOpacity="0.3" />
+                                                    <stop offset="100%" stopColor="rgb(16, 185, 129)" stopOpacity="0.05" />
+                                                </linearGradient>
+                                            </defs>
+
+                                            {/* Area fill */}
+                                            <path
+                                                d={areaPath}
+                                                fill="url(#revenueGradient)"
+                                                className="transition-all duration-500"
+                                            />
+
+                                            {/* Line */}
+                                            <path
+                                                d={linePath}
+                                                fill="none"
+                                                stroke="rgb(16, 185, 129)"
+                                                strokeWidth="0.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                className="drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                                            />
+
+                                            {/* Data points */}
+                                            {points.map((point: any, index: number) => (
+                                                <g key={index}>
+                                                    <circle
+                                                        cx={point.x}
+                                                        cy={point.y}
+                                                        r="1"
+                                                        fill="white"
+                                                        stroke="rgb(16, 185, 129)"
+                                                        strokeWidth="0.4"
+                                                        className="transition-all duration-300 hover:r-2 cursor-pointer drop-shadow-lg"
+                                                    />
+                                                </g>
+                                            ))}
+                                        </svg>
+
+                                        {/* Interactive overlay for tooltips */}
+                                        <div className="absolute inset-0 flex items-stretch">
+                                            {points.map((point: any, index: number) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex-1 group cursor-pointer relative flex flex-col justify-end items-center"
+                                                >
+                                                    {/* Tooltip */}
+                                                    <div className="absolute bottom-full mb-2 bg-gray-900/95 backdrop-blur-md text-white text-xs font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap z-20 shadow-xl translate-y-2 group-hover:translate-y-0 pointer-events-none border border-white/10">
+                                                        RM{point.total.toFixed(2)}
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-2.5 h-2.5 bg-gray-900/95 rotate-45 border-r border-b border-white/10 -mt-1"></div>
+                                                    </div>
+                                                    {/* Date label */}
+                                                    <span className="text-xs text-gray-400 mt-3 font-medium group-hover:text-green-600 transition-colors">
+                                                        {new Date(point.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -33,7 +33,7 @@ const ReservationsView: React.FC = () => {
     const columns = [
         { key: 'proofCode', label: 'Code' },
         { key: 'vehicle', label: 'Vehicle', render: (v: any) => v?.plateNum || '-' },
-        { key: 'vehicle', label: 'User', render: (v: any) => v?.campusUser?.fullName || v?.ownerName || '-' },
+        { key: 'userInfo', label: 'User', render: (_: any, row: any) => row.vehicle?.campusUser?.fullName || row.vehicle?.ownerName || '-' },
         { key: 'lot', label: 'Lot', render: (l: any) => l?.lotNumber || '-' },
         { key: 'reservationDate', label: 'Date', render: (d: string) => new Date(d).toLocaleDateString() },
         {
@@ -97,6 +97,7 @@ const ReservationsView: React.FC = () => {
                 actions={actions}
                 onRefresh={loadData}
                 isLoading={loading}
+                keyField="reservationID"
             />
         </>
     );

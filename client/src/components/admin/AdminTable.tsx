@@ -25,10 +25,11 @@ interface AdminTableProps {
     onDelete?: (item: any) => void;
     onRefresh?: () => void;
     isLoading?: boolean;
+    keyField?: string;
     actions?: (item: any) => React.ReactNode;
 }
 
-const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, onAdd, onEdit, onDelete, onRefresh, isLoading, actions }) => {
+const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, onAdd, onEdit, onDelete, onRefresh, isLoading, actions, keyField }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
     const [currentPage, setCurrentPage] = useState(1);
@@ -180,7 +181,7 @@ const AdminTable: React.FC<AdminTableProps> = ({ title, columns, data, filters, 
                                 ))
                             ) : (
                                 paginatedData.map((row, idx) => (
-                                    <tr key={row.id || row[columns[0].key] || idx} className="hover:bg-gray-50">
+                                    <tr key={keyField ? row[keyField] : (row.id || row[columns[0].key] || idx)} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {startIndex + idx + 1}
                                         </td>

@@ -24,7 +24,7 @@ const Layout: React.FC = () => {
                         <div className="flex justify-between h-16 items-center">
                             {/* Logo */}
                             <Link to="/" className="flex items-center gap-2" onClick={closeMenu}>
-                                <img src={logo} alt="CampusPark Logo" className="w-9 h-9 rounded-full shadow-lg ring-2 ring-white/50 object-cover" />
+                                <img src={logo} alt="CampusPark Logo" className="w-10 h-10 rounded-xl shadow-lg ring-2 ring-white/50 object-cover" />
                                 <span className="text-xl font-bold text-gray-900 tracking-tight">
                                     CampusPark
                                 </span>

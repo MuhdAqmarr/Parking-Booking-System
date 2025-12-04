@@ -148,6 +148,7 @@ const SessionsView: React.FC = () => {
                 onAdd={handleCheckIn}
                 onRefresh={loadData}
                 isLoading={loading}
+                keyField="sessionID"
             />
 
             <Modal

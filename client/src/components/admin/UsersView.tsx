@@ -86,6 +86,7 @@ const UsersView: React.FC = () => {
                 onDelete={handleDelete}
                 onRefresh={loadData}
                 isLoading={loading}
+                keyField="campusUserID"
             />
 
             <Modal

@@ -70,20 +70,50 @@ const AdminDashboard: React.FC = () => {
         }
     }, [activeTab]);
 
-    const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'faculties', label: 'Faculties', icon: FileText },
-        { id: 'users', label: 'Campus Users', icon: Users },
-        { id: 'zones', label: 'Parking Zones', icon: MapPin },
-        { id: 'lots', label: 'Parking Lots', icon: MapPin },
-        { id: 'vehicles', label: 'Vehicles', icon: Car },
-        { id: 'permits', label: 'Permits', icon: Shield },
-        { id: 'reservations', label: 'Reservations', icon: Calendar },
-        { id: 'sessions', label: 'Sessions', icon: Clock },
-        { id: 'fines', label: 'Fines', icon: AlertCircle },
-        { id: 'payments', label: 'Payments', icon: CreditCard },
-        { id: 'reports', label: 'Reports', icon: FileText },
-        { id: 'settings', label: 'Settings', icon: Settings },
+    const menuGroups = [
+        {
+            title: 'Overview',
+            items: [
+                { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            ]
+        },
+        {
+            title: 'Management',
+            items: [
+                { id: 'faculties', label: 'Faculties', icon: FileText },
+                { id: 'users', label: 'Campus Users', icon: Users },
+                { id: 'vehicles', label: 'Vehicles', icon: Car },
+            ]
+        },
+        {
+            title: 'Parking',
+            items: [
+                { id: 'zones', label: 'Parking Zones', icon: MapPin },
+                { id: 'lots', label: 'Parking Lots', icon: MapPin },
+                { id: 'reservations', label: 'Reservations', icon: Calendar },
+                { id: 'sessions', label: 'Sessions', icon: Clock },
+                { id: 'permits', label: 'Permits', icon: Shield },
+            ]
+        },
+        {
+            title: 'Enforcement',
+            items: [
+                { id: 'fines', label: 'Fines', icon: AlertCircle },
+                { id: 'payments', label: 'Payments', icon: CreditCard },
+            ]
+        },
+        {
+            title: 'Analytics',
+            items: [
+                { id: 'reports', label: 'Reports', icon: FileText },
+            ]
+        },
+        {
+            title: 'System',
+            items: [
+                { id: 'settings', label: 'Settings', icon: Settings },
+            ]
+        }
     ];
 
     const DashboardView = () => (
@@ -199,7 +229,7 @@ const AdminDashboard: React.FC = () => {
             `}>
                 <div className="h-full flex flex-col">
                     <div className="h-16 flex items-center px-6 border-b border-gray-200">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
+                        <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
                             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                         </div>
                         <span className="text-xl font-bold text-gray-900">Admin Panel</span>
@@ -211,23 +241,32 @@ const AdminDashboard: React.FC = () => {
                         </button>
                     </div>
 
-                    <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-                        {menuItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => {
-                                    setActiveTab(item.id);
-                                    setIsSidebarOpen(false);
-                                }}
-                                className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === item.id
-                                    ? 'bg-cyan-50 text-cyan-700'
-                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                                    }`}
-                            >
-                                <item.icon className={`w-5 h-5 mr-3 ${activeTab === item.id ? 'text-cyan-600' : 'text-gray-400'
-                                    }`} />
-                                {item.label}
-                            </button>
+                    <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto">
+                        {menuGroups.map((group, groupIndex) => (
+                            <div key={groupIndex}>
+                                <h3 className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                    {group.title}
+                                </h3>
+                                <div className="space-y-1">
+                                    {group.items.map((item) => (
+                                        <button
+                                            key={item.id}
+                                            onClick={() => {
+                                                setActiveTab(item.id);
+                                                setIsSidebarOpen(false);
+                                            }}
+                                            className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-xl transition-colors ${activeTab === item.id
+                                                ? 'bg-cyan-50 text-cyan-700'
+                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                }`}
+                                        >
+                                            <item.icon className={`w-5 h-5 mr-3 ${activeTab === item.id ? 'text-cyan-600' : 'text-gray-400'
+                                                }`} />
+                                            {item.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         ))}
                     </nav>
 

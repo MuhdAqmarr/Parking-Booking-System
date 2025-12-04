@@ -114,6 +114,7 @@ const FinesView: React.FC = () => {
                 onAdd={handleIssueFine}
                 onRefresh={loadData}
                 isLoading={loading}
+                keyField="fineID"
             />
 
             <Modal

@@ -69,15 +69,23 @@ export const getReports = async (req: Request, res: Response) => {
             .select("SUM(payment.amountPaid)", "sum")
             .getRawOne();
 
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const revenueLast7Days = await paymentRepo
+            .createQueryBuilder("payment")
+            .select("TRUNC(payment.paymentDate)", "date")
+            .addSelect("SUM(payment.amountPaid)", "total")
+            .where("payment.paymentDate >= :thirtyDaysAgo", { thirtyDaysAgo })
+            .groupBy("TRUNC(payment.paymentDate)")
+            .getRawMany();
 
         const resRepo = AppDataSource.getRepository(Reservation);
         const reservationsLast7Days = await resRepo
             .createQueryBuilder("reservation")
             .select("reservation.reservationDate", "date")
             .addSelect("COUNT(reservation.reservationID)", "count")
-            .where("reservation.reservationDate >= :sevenDaysAgo", { sevenDaysAgo })
+            .where("reservation.reservationDate >= :thirtyDaysAgo", { thirtyDaysAgo })
             .groupBy("reservation.reservationDate")
             .getRawMany();
 
@@ -85,7 +93,8 @@ export const getReports = async (req: Request, res: Response) => {
             occupancy: { total: totalLots, occupied: occupiedLots },
             fines: { total: totalFines, paid: paidFines },
             revenue: totalRevenue?.sum || 0,
-            reservationsTrend: reservationsLast7Days
+            reservationsTrend: reservationsLast7Days,
+            revenueTrend: revenueLast7Days
         });
     } catch (error) {
         console.error(error);

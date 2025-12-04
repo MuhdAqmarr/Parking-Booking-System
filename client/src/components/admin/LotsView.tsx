@@ -125,6 +125,7 @@ const LotsView: React.FC = () => {
                 onDelete={handleDelete}
                 onRefresh={loadData}
                 isLoading={loading}
+                keyField="lotID"
             />
 
             <Modal
